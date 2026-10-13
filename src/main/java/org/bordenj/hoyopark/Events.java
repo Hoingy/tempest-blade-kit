@@ -137,11 +137,12 @@ public class Events implements Listener {
 
     public void launchTornado(Player p) {
         ArmorStand tornado = (ArmorStand) p.getWorld().spawnEntity(p.getLocation(), EntityType.ARMOR_STAND);
+        tornado.customName(Component.text("Tornado"));
 
         p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BREEZE_WHIRL,3,2f);
         p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST,0.3f,0.5f);
         tornado.setArms(true);
-        //tornado.setInvulnerable(true);
+        tornado.setInvulnerable(true);
         tornado.setInvisible(true);
         tornado.setCollidable(false);
         tornado.setFrictionState(TriState.FALSE);
@@ -153,7 +154,7 @@ public class Events implements Listener {
         Location forwardloc = loc.clone().add(forward);
         forwardloc.setY(loc.getY());
 
-        tornado.setVelocity(forwardloc.toVector().subtract(p.getLocation().toVector()).normalize().multiply(1.5));
+        tornado.setVelocity(forwardloc.toVector().subtract(p.getLocation().toVector()).normalize().multiply(0.7));
 
         new BukkitRunnable() {
             int x = 0;
@@ -167,8 +168,10 @@ public class Events implements Listener {
                 for(Entity e:p.getWorld().getNearbyEntities(tornado.getBoundingBox())){
                     if(e instanceof LivingEntity&&e!=tornado&&e!=p){
                         //apply knock up
-                        ((LivingEntity) e).damage(3,p);
-                        knockUp((LivingEntity) e,20);
+                        if(!e.isInvulnerable()&&!e.isInvisible()){
+                            ((LivingEntity) e).damage(3,p);
+                            knockUp((LivingEntity) e,20);
+                        }
 
                     }
                 }
@@ -256,7 +259,9 @@ public class Events implements Listener {
                 }
 
                 for (Entity en : targets) {
-                    ((LivingEntity) en).damage(3, p);
+                    if(!en.isInvulnerable()&&!en.isInvisible()){
+                        ((LivingEntity) en).damage(3,p);
+                    }
                 }
             }
 
@@ -310,8 +315,10 @@ public class Events implements Listener {
 
                 if (!targets.isEmpty()) {
                     for (Entity en : targets) {
-                        ((LivingEntity) en).damage(3, p);
-                        knockUp((LivingEntity) en,20);
+                        if(!en.isInvulnerable()&&!en.isInvisible()){
+                            ((LivingEntity) en).damage(3,p);
+                            knockUp((LivingEntity) en,20);
+                        }
                     }
                 }
                 return;
@@ -359,7 +366,10 @@ public class Events implements Listener {
                 }
 
                 for (Entity en : targets) {
-                    ((LivingEntity) en).damage(3, p);
+                    if(!en.isInvulnerable()&&!en.isInvisible()){
+                        ((LivingEntity) en).damage(3,p);
+                        knockUp((LivingEntity) en,20);
+                    }
                 }
             }
 
@@ -376,215 +386,268 @@ public class Events implements Listener {
     }
 
     public void WindWall(Player p){
-        ArmorStand wall = (ArmorStand) p.getWorld().spawnEntity(p.getLocation(), EntityType.ARMOR_STAND);
-        wall.setInvisible(true);
-        wall.setArms(true);
-        wall.setInvulnerable(true);
-        wall.setCollidable(false);
-        wall.setFrictionState(TriState.FALSE);
-        p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BREEZE_WHIRL,3,2f);
-        p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST,0.3f,0.5f);
+        if(States.get(p)!=YasState.CASTING){
+            ArmorStand wall = (ArmorStand) p.getWorld().spawnEntity(p.getLocation(), EntityType.ARMOR_STAND);
+            wall.setInvisible(true);
+            wall.setArms(true);
+            wall.setInvulnerable(true);
+            wall.setCollidable(false);
+            wall.customName(Component.text("windwall"));
+            wall.setFrictionState(TriState.FALSE);
+            p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BREEZE_WHIRL,3,2f);
+            p.getWorld().playSound(p.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST,0.3f,0.5f);
 
-        Location loc = p.getLocation();
-        Vector forward = p.getLocation().getDirection();
-        forward.setY(0);
-        forward.normalize();
-        Location forwardloc = loc.clone().add(forward);
-        forwardloc.setY(loc.getY());
+            Location loc = p.getLocation();
+            Vector forward = p.getLocation().getDirection();
+            forward.setY(0);
+            forward.normalize();
+            Location forwardloc = loc.clone().add(forward);
+            forwardloc.setY(loc.getY());
 
-        wall.getLocation().setDirection(p.getLocation().getDirection());
-        wall.setVelocity(forwardloc.toVector().subtract(p.getLocation().toVector()).normalize().multiply(0.35));
+            wall.getLocation().setDirection(p.getLocation().getDirection());
+            wall.setVelocity(forwardloc.toVector().subtract(p.getLocation().toVector()).normalize().multiply(0.35));
 
 
 
-        new BukkitRunnable(){
-            int x = 0;
-            @Override
-            public void run() {
-                if(x>4*20){
-                    wall.remove();
-                    cancel();
-                }
-                x++;
-
-                Vector toRight = forward.clone().crossProduct(new Vector(0, 1, 0)).multiply(2.5);
-                Location rightLoc = wall.getLocation().add(toRight);
-                Vector toLeft = forward.clone().crossProduct(new Vector(0, -1, 0)).multiply(2.5);
-                Location leftLoc = wall.getLocation().add(toLeft);
-                leftLoc.setY(leftLoc.getY() + 3);
-
-                BoundingBox barrier = BoundingBox.of(rightLoc,leftLoc).expand(1);
-                for(Entity e:p.getWorld().getNearbyEntities(barrier)){
-                    if(e instanceof Projectile){
-                        e.remove();
+            new BukkitRunnable(){
+                int x = 0;
+                @Override
+                public void run() {
+                    if(x>4*20){
+                        wall.remove();
+                        cancel();
                     }
+                    x++;
+
+                    Vector toRight = forward.clone().crossProduct(new Vector(0, 1, 0)).multiply(2.5);
+                    Location rightLoc = wall.getLocation().add(toRight);
+                    Vector toLeft = forward.clone().crossProduct(new Vector(0, -1, 0)).multiply(2.5);
+                    Location leftLoc = wall.getLocation().add(toLeft);
+                    leftLoc.setY(leftLoc.getY() + 3);
+
+                    BoundingBox barrier = BoundingBox.of(rightLoc,leftLoc).expand(1);
+                    for(Entity e:p.getWorld().getNearbyEntities(barrier)){
+                        if(e instanceof Projectile){
+                            e.remove();
+                        }
+                    }
+                    leftLoc.setY(leftLoc.getY() - 3);
+                    drawLine(rightLoc,leftLoc,0.2,new Particle.DustOptions(Color.GRAY,1),0,0,0);
+
+                    drawLine(leftLoc,leftLoc.clone().add(0,2,0),0.2,new Particle.DustOptions(Color.WHITE,1),0,0,0);
+                    drawLine(rightLoc,rightLoc.clone().add(0,2,0),0.2,new Particle.DustOptions(Color.WHITE,1),0,0,0);
+
+                    double height = 2;
+                    Vector span = leftLoc.toVector().subtract(rightLoc.toVector());
+
+                    for (int i = 0; i < 10; i++) {
+                        double t = ThreadLocalRandom.current().nextDouble();
+                        double h = ThreadLocalRandom.current().nextDouble() * height;
+
+                        Location pt = rightLoc.clone()
+                                .add(span.clone().multiply(t))
+                                .add(0, h, 0);
+
+                        p.getWorld().spawnParticle(Particle.DUST, pt, 1, 0, 0, 0, new Particle.DustOptions(Color.WHITE,0.6f));
+                    }
+
                 }
-                leftLoc.setY(leftLoc.getY() - 3);
-                drawLine(rightLoc,leftLoc,0.2,new Particle.DustOptions(Color.GRAY,1),0,0,0);
+            }.runTaskTimer(plugin,0,1);
 
-                drawLine(leftLoc,leftLoc.clone().add(0,2,0),0.2,new Particle.DustOptions(Color.WHITE,1),0,0,0);
-                drawLine(rightLoc,rightLoc.clone().add(0,2,0),0.2,new Particle.DustOptions(Color.WHITE,1),0,0,0);
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    wall.setFrictionState(TriState.TRUE);
 
-                double height = 2;
-                Vector span = leftLoc.toVector().subtract(rightLoc.toVector());
-
-                for (int i = 0; i < 10; i++) {
-                    double t = ThreadLocalRandom.current().nextDouble();
-                    double h = ThreadLocalRandom.current().nextDouble() * height;
-
-                    Location pt = rightLoc.clone()
-                            .add(span.clone().multiply(t))
-                            .add(0, h, 0);
-
-                    p.getWorld().spawnParticle(Particle.DUST, pt, 1, 0, 0, 0, new Particle.DustOptions(Color.WHITE,0.6f));
                 }
+            }.runTaskLater(plugin,15);
+        }
+    }
 
+    public void SweepingDash(Player p){
+        if(!(States.get(p) ==YasState.CASTING)){
+            RayTraceResult looking = p.getWorld().rayTrace(p.getEyeLocation(),
+                    p.getEyeLocation().getDirection(),2,FluidCollisionMode.NEVER,
+                    true,1,entity -> entity != p);
+
+            if(looking != null && looking.getHitEntity()!=null && looking.getHitEntity() instanceof LivingEntity en){
+                p.setCollidable(false);
+                if(!Ecooldown.contains(en)&&!en.getName().equals("Tornado")){
+                    en.damage(1,p);
+                    decayRing(en,1,6*20,20,0.1);
+                    States.put(p,YasState.DASHING);
+                    new BukkitRunnable() {
+                        int x= 0;
+                        @Override
+                        public void run() {
+                            Location loc = p.getLocation();
+                            Vector forward = p.getLocation().getDirection();
+                            forward.setY(0);
+                            forward.normalize().multiply(0.4);
+                            Location forwardloc = loc.clone().add(forward);
+                            forwardloc.setY(loc.getY());
+                            p.teleport(forwardloc);
+                            if(x>8 || !p.isValid()){
+                                cancel();
+                                States.put(p,YasState.IDLE);
+                                p.setCollidable(true);
+                            }
+                            x++;
+                        }
+                    }.runTaskTimer(plugin,0,1);
+                }
+                else{
+                    p.sendActionBar(Component.text("Target not ready!"));
+                }
             }
-        }.runTaskTimer(plugin,0,1);
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                wall.setFrictionState(TriState.TRUE);
-
-            }
-        }.runTaskLater(plugin,15);
+        }
     }
 
     public void LastBreath(Player p,LivingEntity target) {
 
-        Location hover = target.getLocation();
-        hover.setY(p.getLocation().getY()+5);
-        target.teleport(hover);
-        target.setGravity(false);
-        target.setAI(false);
-        target.setVelocity(new Vector(0,0,0));
+        if(!(States.get(p) ==YasState.CASTING)){
+            if(!target.isInvulnerable()&&!target.isInvisible()){
+                States.put(p,YasState.CASTING);
 
-        p.setGravity(false);
-        Location spot = hover.add(target.getLocation().getDirection().normalize().multiply(-3));
-        p.teleport(spot);
-        p.setVelocity(new Vector(0,0,0));
+                Qstacks.remove(p);
+                p.getInventory().remove(Material.BREEZE_ROD);
 
-        Vector forward = target.getLocation().toVector().subtract(spot.toVector()).setY(0).normalize();
-        Vector right = forward.clone().rotateAroundY(-Math.PI / 2);
+                Location hover = target.getLocation();
+                hover.setY(p.getLocation().getY()+5);
+                target.teleport(hover);
+                target.setGravity(false);
+                target.setAI(false);
+                target.setVelocity(new Vector(0,0,0));
 
-        Location rightLoc = spot.clone().add(right.clone().multiply(2));
-        Location leftLoc  = spot.clone().subtract(right.clone().multiply(2));
+                p.setGravity(false);
+                Location spot = hover.add(target.getLocation().getDirection().normalize().multiply(-3));
+                p.teleport(spot);
+                p.setVelocity(new Vector(0,0,0));
 
-        rightLoc.setY(rightLoc.getY() -1);
-        leftLoc.setY(leftLoc.getY() -1);
+                Vector forward = target.getLocation().toVector().subtract(spot.toVector()).setY(0).normalize();
+                Vector right = forward.clone().rotateAroundY(-Math.PI / 2);
 
-        Location rightTop = rightLoc.clone().add(0,3,0);
-        Location leftTop = leftLoc.clone().add(0,3,0);
+                Location rightLoc = spot.clone().add(right.clone().multiply(2));
+                Location leftLoc  = spot.clone().subtract(right.clone().multiply(2));
 
-        for(Entity e:target.getNearbyEntities(3,1,3)){
-            if(e instanceof LivingEntity en && Airborne.contains(en)){
-                Location hover2 = en.getLocation();
-                hover2.setY(p.getLocation().getY());
-                en.teleport(hover2);
-                en.setGravity(false);
-                en.setAI(false);
-                en.setVelocity(new Vector(0,0,0));
+                rightLoc.setY(rightLoc.getY() -1);
+                leftLoc.setY(leftLoc.getY() -1);
+
+                Location rightTop = rightLoc.clone().add(0,3,0);
+                Location leftTop = leftLoc.clone().add(0,3,0);
+
+                for(Entity e:target.getNearbyEntities(3,1,3)){
+                    if(e instanceof LivingEntity en && Airborne.contains(en)){
+                        Location hover2 = en.getLocation();
+                        hover2.setY(p.getLocation().getY());
+                        en.teleport(hover2);
+                        en.setGravity(false);
+                        en.setAI(false);
+                        en.setVelocity(new Vector(0,0,0));
+
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                en.setGravity(true);
+                                en.setAI(true);
+                                en.setVelocity(new Vector(0,-1,0));
+
+                                en.damage(6,p);
+
+                            }
+                        }.runTaskLater(plugin,20);
+                    }
+                }
+
 
                 new BukkitRunnable() {
                     @Override
                     public void run() {
-                        en.setGravity(true);
-                        en.setAI(true);
-                        en.setVelocity(new Vector(0,-1,0));
+                        ArmorStand hit = (ArmorStand) p.getWorld().spawnEntity(rightLoc,EntityType.ARMOR_STAND);
+                        hit.getLocation().setDirection(hit.getLocation().toVector().subtract(target.getLocation().toVector()));
+                        hit.setInvisible(true);
+                        hit.setItem(EquipmentSlot.OFF_HAND,new ItemStack(Material.IRON_SWORD));
+                        hit.setLeftArmPose(new EulerAngle(0,0,Math.toRadians(60)));
+                        Vector fly = hit.getLocation().toVector().subtract(leftTop.toVector()).normalize().multiply(-2);
+                        hit.setVelocity(fly);
+                        p.getWorld().spawnParticle(Particle.CRIT,target.getLocation(),10,0,0,0,1);
+                        p.getWorld().playSound(p.getLocation(),Sound.ITEM_SPEAR_HIT,0.5f,1f);
 
-                        en.damage(6,p);
+                        target.damage(2,p);
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                hit.remove();
+                            }
+                        }.runTaskLater(plugin,6);
+                    }
+                }.runTaskLater(plugin,5);
+
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        ArmorStand hit = (ArmorStand) p.getWorld().spawnEntity(leftLoc,EntityType.ARMOR_STAND);
+                        hit.getLocation().setDirection(hit.getLocation().toVector().subtract(target.getLocation().toVector()));
+                        hit.setInvisible(true);
+                        hit.setItem(EquipmentSlot.HAND,new ItemStack(Material.IRON_SWORD));
+                        hit.setRightArmPose(new EulerAngle(0,0,Math.toRadians(300)));
+                        Vector fly = hit.getLocation().toVector().subtract(rightTop.toVector()).normalize().multiply(-2);
+                        hit.setVelocity(fly);
+                        p.getWorld().spawnParticle(Particle.CRIT,target.getLocation(),10,0,0,0,1);
+                        p.getWorld().playSound(p.getLocation(),Sound.ITEM_SPEAR_HIT,0.5f,1f);
+
+                        target.damage(2,p);
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                hit.remove();
+                            }
+                        }.runTaskLater(plugin,6);
+                    }
+                }.runTaskLater(plugin,10);
+
+
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        ArmorStand hit = (ArmorStand) p.getWorld().spawnEntity(spot.clone().subtract(right.clone().multiply(0.5)),EntityType.ARMOR_STAND);
+                        hit.getLocation().setDirection(hit.getLocation().toVector().subtract(target.getLocation().toVector()));
+                        hit.setInvisible(true);
+                        hit.setItem(EquipmentSlot.HAND,new ItemStack(Material.IRON_SWORD));
+                        hit.setVelocity(new Vector(0,-1.2,0));
+
+                        target.setGravity(true);
+                        target.setAI(true);
+                        target.setVelocity(new Vector(0,-1,0));
+
+                        p.setGravity(true);
+                        p.setVelocity(new Vector(0,-1,0));
+
+                        p.getWorld().spawnParticle(Particle.CRIT,target.getLocation(),10,0,0,0,1);
+
+                        target.damage(2,p);
+
+                        new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                hit.remove();
+                            }
+                        }.runTaskLater(plugin,8);
 
                     }
                 }.runTaskLater(plugin,20);
+
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        p.getWorld().playSound(p.getLocation(),Sound.ITEM_MACE_SMASH_GROUND_HEAVY,0.5f,1f);
+                        p.getWorld().spawnParticle(Particle.GUST_EMITTER_LARGE,target.getLocation(),1,0,0,0);
+                        States.put(p,YasState.IDLE);
+                    }
+                }.runTaskLater(plugin,23);
             }
         }
 
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                ArmorStand hit = (ArmorStand) p.getWorld().spawnEntity(rightLoc,EntityType.ARMOR_STAND);
-                hit.getLocation().setDirection(hit.getLocation().toVector().subtract(target.getLocation().toVector()));
-                hit.setInvisible(true);
-                hit.setItem(EquipmentSlot.OFF_HAND,new ItemStack(Material.IRON_SWORD));
-                hit.setLeftArmPose(new EulerAngle(0,0,Math.toRadians(60)));
-                Vector fly = hit.getLocation().toVector().subtract(leftTop.toVector()).normalize().multiply(-2);
-                hit.setVelocity(fly);
-                p.getWorld().spawnParticle(Particle.CRIT,target.getLocation(),10,0,0,0,1);
-                p.getWorld().playSound(p.getLocation(),Sound.ITEM_SPEAR_HIT,0.5f,1f);
-
-                target.damage(2,p);
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        hit.remove();
-                    }
-                }.runTaskLater(plugin,6);
-            }
-        }.runTaskLater(plugin,5);
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                ArmorStand hit = (ArmorStand) p.getWorld().spawnEntity(leftLoc,EntityType.ARMOR_STAND);
-                hit.getLocation().setDirection(hit.getLocation().toVector().subtract(target.getLocation().toVector()));
-                hit.setInvisible(true);
-                hit.setItem(EquipmentSlot.HAND,new ItemStack(Material.IRON_SWORD));
-                hit.setRightArmPose(new EulerAngle(0,0,Math.toRadians(300)));
-                Vector fly = hit.getLocation().toVector().subtract(rightTop.toVector()).normalize().multiply(-2);
-                hit.setVelocity(fly);
-                p.getWorld().spawnParticle(Particle.CRIT,target.getLocation(),10,0,0,0,1);
-                p.getWorld().playSound(p.getLocation(),Sound.ITEM_SPEAR_HIT,0.5f,1f);
-
-                target.damage(2,p);
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        hit.remove();
-                    }
-                }.runTaskLater(plugin,6);
-            }
-        }.runTaskLater(plugin,10);
-
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                ArmorStand hit = (ArmorStand) p.getWorld().spawnEntity(spot.clone().subtract(right.clone().multiply(0.5)),EntityType.ARMOR_STAND);
-                hit.getLocation().setDirection(hit.getLocation().toVector().subtract(target.getLocation().toVector()));
-                hit.setInvisible(true);
-                hit.setItem(EquipmentSlot.HAND,new ItemStack(Material.IRON_SWORD));
-                hit.setVelocity(new Vector(0,-1.2,0));
-
-                target.setGravity(true);
-                target.setAI(true);
-                target.setVelocity(new Vector(0,-1,0));
-
-                p.setGravity(true);
-                p.setVelocity(new Vector(0,-1,0));
-
-                p.getWorld().spawnParticle(Particle.CRIT,target.getLocation(),10,0,0,0,1);
-
-                target.damage(2,p);
-
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        hit.remove();
-                    }
-                }.runTaskLater(plugin,8);
-
-            }
-        }.runTaskLater(plugin,20);
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                p.getWorld().playSound(p.getLocation(),Sound.ITEM_MACE_SMASH_GROUND_HEAVY,0.5f,1f);
-                p.getWorld().spawnParticle(Particle.GUST_EMITTER_LARGE,target.getLocation(),1,0,0,0);
-            }
-        }.runTaskLater(plugin,23);
     }
 
     @EventHandler
@@ -706,46 +769,7 @@ public class Events implements Listener {
     public void PlayerSneak(PlayerToggleSneakEvent e){
         Player p = e.getPlayer();
         if(!p.isSneaking()){
-            RayTraceResult looking = p.getWorld().rayTrace(p.getEyeLocation(),
-                    p.getEyeLocation().getDirection(),2,FluidCollisionMode.NEVER,
-                    true,1,entity -> entity != p);
-
-            if(looking != null && looking.getHitEntity()!=null && looking.getHitEntity() instanceof LivingEntity en){
-                p.setCollidable(false);
-                if(!Ecooldown.contains(en)){
-                    en.damage(1,p);
-                    decayRing(en,1,6*20,20,0.1);
-                    States.put(p,YasState.DASHING);
-                    new BukkitRunnable() {
-                        int x= 0;
-                        @Override
-                        public void run() {
-                            Location loc = p.getLocation();
-                            Vector forward = p.getLocation().getDirection();
-                            forward.setY(0);
-                            forward.normalize().multiply(0.4);
-                            Location forwardloc = loc.clone().add(forward);
-                            forwardloc.setY(loc.getY());
-                            p.teleport(forwardloc);
-                            if(x>8 || !p.isValid()){
-                                cancel();
-                                States.put(p,YasState.IDLE);
-                                p.setCollidable(true);
-                            }
-                            x++;
-                        }
-                    }.runTaskTimer(plugin,0,1);
-                }
-                else{
-                    p.sendActionBar(Component.text("Target not ready!"));
-                }
-            }
-
-
-
-
-
-
+            SweepingDash(p);
         }
     }
 
