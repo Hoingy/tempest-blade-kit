@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="tempestbladeKit">
+    <output-path>$PROJECT_DIR$/../../../../Paper Server/plugins</output-path>
+    <root id="archive" name="tempestbladeKit.jar">
+      <element id="module-output" name="tempestbladeKit.main" />
+    </root>
+  </artifact>
+</component>
